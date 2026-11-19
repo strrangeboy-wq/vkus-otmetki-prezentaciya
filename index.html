@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Вкус‑отметки</title>
+<style>
+  :root{
+    --bg:#0b0a09; --ink:#fff6ec; --mute:#b4aba0;
+    --orange:#ff7a1a; --yellow:#ffc83a;
+    --green:#b4ee2a; --pink:#ff3fa4; --blue:#3b5bff; --red:#ff3b2f; --gold:#ffcf3f;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:#050404;overflow:hidden;color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;user-select:none;-webkit-user-select:none}
+  #deck{position:absolute;left:50%;top:50%;width:1600px;height:900px;transform-origin:0 0;overflow:hidden;background:var(--bg)}
+
+  /* ---------- слайды ---------- */
+  .slide{position:absolute;inset:0;padding:70px 100px;opacity:0;visibility:hidden;transition:opacity .55s ease,visibility .55s;
+    --ac:var(--orange);
+    background:
+      radial-gradient(900px 600px at 85% 15%, color-mix(in srgb,var(--ac) 22%,transparent), transparent 70%),
+      radial-gradient(700px 500px at 5% 100%, color-mix(in srgb,var(--ac2,var(--ac)) 14%,transparent), transparent 70%),
+      var(--bg)}
+  .slide.on{opacity:1;visibility:visible}
+  .slide[data-tone=direct]{--ac:var(--green);--ac2:#3fbf5a}
+  .slide[data-tone=otm]{--ac:var(--pink);--ac2:var(--blue)}
+  .slide[data-tone=bon]{--ac:var(--red);--ac2:var(--gold)}
+  .slide[data-tone=warn]{--ac:#ff4a3a;--ac2:#ff7a1a}
+
+  .a{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .8s cubic-bezier(.2,.75,.2,1);transition-delay:calc(var(--d,0)*130ms + 150ms)}
+  .slide.on .a{opacity:1;transform:none}
+  .pop{opacity:0;transform:scale(.85);transition:opacity .6s ease,transform .7s cubic-bezier(.2,1.4,.4,1);transition-delay:calc(var(--d,0)*130ms + 150ms)}
+  .slide.on .pop{opacity:1;transform:none}
+
+  .h{font-size:88px;font-weight:800;line-height:1.02;letter-spacing:-.028em}
+  .h em{font-style:normal;color:var(--ac)}
+  .sub{font-size:30px;line-height:1.3;color:var(--mute);margin-top:22px;font-weight:500}
+  .eyebrow{display:inline-flex;align-items:center;gap:14px;font-size:22px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--ac);margin-bottom:22px}
+  .eyebrow img{width:58px;height:58px;border-radius:50%;box-shadow:0 0 0 2px color-mix(in srgb,var(--ac) 50%,transparent)}
+  .center{text-align:center}
+  .grad{background:linear-gradient(90deg,var(--orange),var(--yellow));-webkit-background-clip:text;background-clip:text;color:transparent}
+
+  /* номер и полоска */
+  #num{position:absolute;right:34px;bottom:24px;font-size:17px;font-weight:600;color:rgba(255,246,236,.32);letter-spacing:.06em;z-index:20}
+  #bar{position:absolute;left:0;bottom:0;height:3px;background:linear-gradient(90deg,var(--orange),var(--yellow));transition:width .5s ease;z-index:20}
+
+  /* значки */
+  .badge{border-radius:50%;display:block}
+  .float{animation:float 5s ease-in-out infinite}
+  .float.f2{animation-delay:-1.6s}.float.f3{animation-delay:-3.2s}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+
+  /* ---------- телефон ---------- */
+  .phone{position:relative;width:380px;height:780px;border-radius:58px;background:#151414;padding:12px;
+    box-shadow:0 0 0 2px #2b2928,0 0 0 9px #0d0c0c,0 40px 90px rgba(0,0,0,.65),0 0 120px color-mix(in srgb,var(--ac) 18%,transparent)}
+  .phone .scr{position:relative;width:100%;height:100%;border-radius:46px;overflow:hidden;display:flex;flex-direction:column}
+  .phone .island{position:absolute;top:13px;left:50%;transform:translateX(-50%);width:108px;height:32px;border-radius:20px;background:#000;z-index:5}
+  .phone.sm{width:262px;height:538px;border-radius:44px;padding:9px}
+  .phone.sm .scr{border-radius:36px}
+  .phone.sm .island{width:78px;height:24px;top:10px}
+
+  /* Telegram */
+  .tg{background:linear-gradient(165deg,#cfe0a9 0%,#e6dfa0 38%,#bcd9b9 75%,#a9d2c7 100%);color:#111}
+  .tg::before{content:"";position:absolute;inset:0;opacity:.22;
+    background-image:radial-gradient(circle at 20px 20px,#6c8a4c 2px,transparent 3px),radial-gradient(circle at 60px 55px,#6c8a4c 1.5px,transparent 2.5px);
+    background-size:80px 80px}
+  .tg-status{height:52px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 30px 6px;font-size:16px;font-weight:700;background:#f7f7f7;position:relative;z-index:2}
+  .tg-status i{font-style:normal;letter-spacing:2px;font-size:12px}
+  .tg-head{height:58px;flex:none;display:flex;align-items:center;gap:10px;padding:0 14px;background:#f7f7f7;border-bottom:1px solid #ddd;position:relative;z-index:2}
+  .tg-head .back{color:#2f8de4;font-size:30px;line-height:1;width:20px}
+  .tg-head .t{flex:1;text-align:center}
+  .tg-head .t b{display:block;font-size:17px}
+  .tg-head .t span{font-size:13px;color:#8a8a8a}
+  .tg-head .av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#ffa043,#f26a1b);color:#fff;font-weight:700;font-size:14px;display:grid;place-items:center}
+  .tg-chat{flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;padding:12px 12px 10px;position:relative;z-index:2}
+  .tg-input{height:60px;flex:none;background:#f7f7f7;border-top:1px solid #ddd;display:flex;align-items:center;gap:10px;padding:0 14px 6px;position:relative;z-index:2}
+  .tg-input div{flex:1;height:36px;border:1px solid #d6d6d6;border-radius:18px;background:#fff;font-size:15px;color:#9a9a9a;display:flex;align-items:center;padding:0 14px}
+  .row-ok{align-self:flex-start;background:#fff;border-radius:14px;padding:6px 12px;font-size:15px;box-shadow:0 1px 1px rgba(0,0,0,.12)}
+  .row-ok b{font-weight:700}
+  .row-ok s{text-decoration:none;color:#999;font-size:12px;margin-left:8px}
+  .card{background:#fff;border-radius:16px;padding:11px 13px 8px;font-size:16px;line-height:1.35;box-shadow:0 1px 1px rgba(0,0,0,.12)}
+  .card .who{font-size:17px;margin-bottom:7px}
+  .card .q{background:#fbeee3;border-left:3px solid #e8893a;border-radius:6px;padding:7px 10px;margin-bottom:8px}
+  .card .ans{background:#fbf3ea;border-left:3px solid #e8893a;border-radius:6px;padding:7px 10px}
+  .card .ans .l{color:#d9772a;font-size:13px;font-weight:700;margin-bottom:3px}
+  .card .tm{text-align:right;color:#a3a3a3;font-size:12px;margin-top:4px}
+  .card.alarm{border-left:5px solid #ff3b2f}
+  .tag-red{display:inline-block;background:#ff3b2f;color:#fff;font-size:12px;font-weight:800;border-radius:6px;padding:1px 7px;margin-left:4px;vertical-align:2px}
+  .tag-new{display:inline-block;background:#2f8de4;color:#fff;font-size:12px;font-weight:800;border-radius:6px;padding:1px 6px;vertical-align:2px}
+  .kb{display:flex;gap:6px}
+  .kb div{flex:1;height:42px;border-radius:12px;background:rgba(40,60,40,.32);color:#fff;font-size:16px;font-weight:600;display:grid;place-items:center;backdrop-filter:blur(4px)}
+  .kb .go{background:#2fb457}
+
+  /* ---------- слайд 1 ---------- */
+  .s1{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .s1 .logo{height:78px;opacity:.95}
+  .s1 .title{font-size:176px;font-weight:900;letter-spacing:-.045em;line-height:1;margin-top:24px}
+  .s1 .sub{font-size:38px;margin-top:20px;color:#d8cfc4}
+  .s1 .row{display:flex;gap:56px;margin-top:56px}
+  .s1 .row img{width:196px;height:196px}
+
+  /* ---------- слайд 2 ---------- */
+  .tiles{display:flex;gap:26px;margin-top:84px}
+  .dm{width:327px;height:390px;border-radius:30px;background:#18171a;border:1px solid #2a2830;padding:26px;display:flex;flex-direction:column;position:relative;overflow:hidden}
+  .dm .top{display:flex;align-items:center;gap:12px;font-size:20px;color:#8f8a96;font-weight:600}
+  .dm .ava{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#feda75,#fa7e1e,#d62976,#962fbf);padding:2px}
+  .dm .ava::after{content:"";display:block;width:100%;height:100%;border-radius:50%;background:#3a3842 radial-gradient(circle at 50% 38%,#77737f 8px,transparent 9px)}
+  .dm .msg{margin-top:30px;background:#2d2c31;border-radius:22px 22px 22px 6px;padding:18px 22px;font-size:30px;line-height:1.25;font-weight:500;align-self:flex-start}
+  .dm .late{margin-top:auto;display:inline-flex;align-items:center;gap:10px;font-size:23px;font-weight:700;color:#ff6a5a}
+  .dm.story{padding:0;border:none}
+  .dm.story img{width:100%;height:100%;object-fit:cover;filter:grayscale(.85) brightness(.45)}
+  .dm.story .late{position:absolute;left:26px;right:26px;bottom:24px;line-height:1.25}
+  .dm.story .top{position:absolute;left:26px;top:24px;color:#cfcad6}
+
+  /* ---------- слайд 3 ---------- */
+  .s3{display:flex;flex-direction:column;justify-content:center}
+  .three{display:flex;justify-content:center;gap:90px;margin-top:80px}
+  .three .it{width:330px;text-align:center}
+  .three img{width:310px;height:310px;margin:0 auto;filter:drop-shadow(0 26px 50px rgba(0,0,0,.55))}
+  .three b{display:block;font-size:40px;font-weight:800;margin-top:30px;letter-spacing:-.01em}
+  .three span{display:block;font-size:27px;color:var(--mute);margin-top:8px}
+
+  /* ---------- слайд 4 ---------- */
+  .split{display:flex;align-items:center;justify-content:space-between;height:100%}
+  .split .left{width:820px}
+  .steps{margin-top:54px;display:flex;flex-direction:column;gap:30px;position:relative}
+  .steps::before{content:"";position:absolute;left:35px;top:40px;bottom:40px;border-left:3px dashed color-mix(in srgb,var(--ac) 45%,transparent)}
+  .step{display:flex;align-items:center;gap:28px;position:relative}
+  .step .n{width:72px;height:72px;flex:none;border-radius:50%;background:var(--ac);color:#0b0a09;font-size:34px;font-weight:900;display:grid;place-items:center;box-shadow:0 0 0 8px var(--bg)}
+  .step .tx{font-size:38px;font-weight:700;letter-spacing:-.01em}
+  .chip{display:inline-block;margin-left:14px;font-size:22px;font-weight:800;color:#0b0a09;background:var(--yellow);border-radius:30px;padding:5px 15px;vertical-align:6px;letter-spacing:0}
+
+  /* ---------- слайд 5 ---------- */
+  .duo{display:flex;gap:40px;margin-top:50px}
+  .tile{flex:1;height:560px;border-radius:34px;background:#141413;border:1px solid #262522;padding:44px 40px 40px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;position:relative;overflow:hidden}
+  .tile .cap{font-size:36px;font-weight:800;text-align:center;letter-spacing:-.01em}
+  .bigbtn{font-size:36px;font-weight:700;color:#fff;background:#3b4a3a;border-radius:18px;padding:14px 34px;box-shadow:0 0 0 4px color-mix(in srgb,var(--ac) 70%,transparent),0 0 40px color-mix(in srgb,var(--ac) 45%,transparent)}
+  .stack{position:relative;width:560px;height:250px}
+  .stack .card{position:absolute;left:0;right:0;font-size:25px;line-height:1.35;color:#111;padding:16px 18px}
+  .stack .back{top:0;transform:rotate(-3deg) translate(-16px,-4px);opacity:.35}
+  .stack .front{top:66px;transform:rotate(1.5deg)}
+  .vbox{display:flex;flex-direction:column;align-items:center;width:560px}
+  .voice{display:flex;align-items:center;gap:18px;background:#dcf8c6;border-radius:24px 24px 6px 24px;padding:16px 26px;color:#2a6b2a;align-self:flex-end}
+  .voice .pl{width:58px;height:58px;border-radius:50%;background:#3fae4a;display:grid;place-items:center}
+  .voice .pl::after{content:"";border-left:16px solid #fff;border-top:10px solid transparent;border-bottom:10px solid transparent;margin-left:5px}
+  .voice .wave{display:flex;align-items:center;gap:4px;height:40px}
+  .voice .wave i{display:block;width:5px;border-radius:3px;background:#5aa95e}
+  .voice span{font-size:20px;font-weight:600}
+  .down{font-size:24px;font-weight:700;color:var(--ac);margin:18px 0 14px;display:flex;align-items:center;gap:10px}
+  .tile .card.solo{width:560px;font-size:25px;color:#111;padding:16px 18px}
+
+  /* ---------- слайд 6 ---------- */
+  .callouts{margin-top:56px;display:flex;flex-direction:column;gap:30px}
+  .co{display:flex;align-items:center;gap:24px;font-size:36px;font-weight:700;letter-spacing:-.01em}
+  .co .ic{width:70px;height:70px;flex:none;border-radius:20px;background:#1a1918;border:1px solid #2c2a27;display:grid;place-items:center;font-size:36px}
+
+  /* ---------- слайд 7 ---------- */
+  .flow{display:flex;align-items:center;justify-content:center;gap:34px;margin-top:40px}
+  .flow .col{display:flex;flex-direction:column;align-items:center;gap:22px}
+  .flow .lb{font-size:28px;font-weight:800;letter-spacing:-.01em}
+  .arrow{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:-60px}
+  .arrow b{width:70px;height:70px;border-radius:50%;background:var(--ac);color:#fff;font-size:36px;display:grid;place-items:center;box-shadow:0 0 40px color-mix(in srgb,var(--ac) 50%,transparent)}
+  .arrow span{font-size:20px;font-weight:800;color:var(--ac);text-transform:uppercase;letter-spacing:.08em}
+  .st{background:#000;color:#fff;position:relative}
+  .st .blur{position:absolute;inset:-30px;background:url(img/storis-burger.jpg) center/cover;filter:blur(26px) brightness(.45)}
+  .st .ph{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);width:100%}
+  .st .bars{position:absolute;top:44px;left:12px;right:12px;display:flex;gap:4px;z-index:3}
+  .st .bars i{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.9)}
+  .st .who{position:absolute;top:56px;left:12px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;z-index:3;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+  .st .who .av{width:28px;height:28px;border-radius:50%;background:#5b5862 radial-gradient(circle at 50% 38%,#9a96a3 5px,transparent 6px);border:2px solid #fff}
+  .st .who .av.vk{background:#f26a1b url(img/logo-vkusnoff.png) center/86% no-repeat}
+  .st .send{position:absolute;bottom:16px;left:12px;right:12px;height:38px;border:1.5px solid rgba(255,255,255,.7);border-radius:20px;font-size:12px;display:flex;align-items:center;padding-left:14px;color:rgba(255,255,255,.85);z-index:3}
+  .st .mention{position:absolute;left:50%;bottom:92px;transform:translateX(-50%) rotate(-3deg);background:#fff;color:#c13584;font-weight:800;font-size:19px;border-radius:10px;padding:7px 14px;z-index:3;box-shadow:0 6px 20px rgba(0,0,0,.4);white-space:nowrap}
+  .st .tap{position:absolute;left:58%;bottom:64px;font-size:30px;z-index:4;filter:drop-shadow(0 3px 6px rgba(0,0,0,.5))}
+  .ig{background:#000;color:#fff}
+  .ig .hd{height:96px;flex:none;display:flex;align-items:flex-end;gap:10px;padding:0 14px 12px;border-bottom:1px solid #222;font-size:14px;font-weight:700}
+  .ig .hd .av{width:30px;height:30px;border-radius:50%;background:#5b5862 radial-gradient(circle at 50% 38%,#9a96a3 5px,transparent 6px)}
+  .ig .body{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-end;gap:6px;padding:12px}
+  .ig .body img{width:176px;border-radius:18px;display:block}
+  .ig .bub{background:linear-gradient(135deg,#6a5cff,#a53cf2);border-radius:18px 18px 4px 18px;padding:9px 13px;font-size:14px;line-height:1.3;max-width:200px}
+  .ig .in{height:52px;flex:none;margin:0 10px 14px;border-radius:24px;background:#1c1c1e;font-size:12px;color:#888;display:flex;align-items:center;padding-left:16px}
+
+  /* ---------- слайд 8 ---------- */
+  .cycle{position:relative;width:700px;height:700px;flex:none}
+  .cycle svg{position:absolute;inset:0}
+  .node{position:absolute;width:240px;margin-left:-120px;margin-top:-68px;text-align:center}
+  .node .c{width:136px;height:136px;border-radius:50%;margin:0 auto;background:#1a1312;border:2px solid color-mix(in srgb,var(--gold) 55%,transparent);display:grid;place-items:center;font-size:62px;box-shadow:0 0 50px rgba(255,80,40,.18)}
+  .node b{display:block;font-size:27px;font-weight:800;margin-top:14px;letter-spacing:-.01em}
+  .mid{position:absolute;left:50%;top:50%;transform:translate(-50%,-46%);text-align:center}
+  .mid .big{font-size:118px;font-weight:900;letter-spacing:-.04em;line-height:1;background:linear-gradient(180deg,#ffe58a,#ffb21a);-webkit-background-clip:text;background-clip:text;color:transparent;white-space:nowrap}
+  .mid span{display:block;font-size:30px;font-weight:700;color:#ffcf6a;margin-top:6px}
+
+  /* ---------- слайд 9 ---------- */
+  .grid4{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:64px}
+  .ben{height:268px;border-radius:32px;background:#151413;border:1px solid #2a2724;padding:0 44px;display:flex;align-items:center;gap:34px;position:relative;overflow:hidden}
+  .ben>*{position:relative;z-index:1}
+  .ben::after{content:"";position:absolute;z-index:0;right:-100px;top:-100px;width:220px;height:220px;border-radius:50%;background:radial-gradient(color-mix(in srgb,var(--c) 30%,transparent),transparent 70%)}
+  .ben .ic{font-size:70px;flex:none;width:110px;height:110px;border-radius:30px;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 16%,#151413)}
+  .ben b{font-size:44px;font-weight:800;line-height:1.12;letter-spacing:-.015em}
+
+  /* ---------- слайд 10 ---------- */
+  .s10{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .s10 .row{display:flex;gap:44px;margin-bottom:56px}
+  .s10 .row img{width:170px;height:170px}
+  .s10 .title{font-size:150px;font-weight:900;letter-spacing:-.045em;line-height:1}
+  .s10 .sub{font-size:40px;margin-top:28px;color:#e2d9ce}
+  .s10 .logo{height:62px;margin-top:64px;opacity:.85}
+
+  /* ---------- 2 пути начисления ---------- */
+  .ways{display:flex;gap:40px;margin-top:46px}
+  .way{flex:1;height:560px;border-radius:34px;background:#141413;border:1px solid #262522;padding:38px 40px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+  .way::after{content:"";position:absolute;z-index:0;right:-120px;top:-120px;width:320px;height:320px;border-radius:50%;background:radial-gradient(color-mix(in srgb,var(--c) 26%,transparent),transparent 70%)}
+  .way>*{position:relative;z-index:1}
+  .wh{display:flex;align-items:center;gap:22px}
+  .wl{width:76px;height:76px;flex:none;border-radius:50%;background:var(--c);color:#0b0a09;font-size:40px;font-weight:900;display:grid;place-items:center}
+  .wh b{font-size:50px;font-weight:800;letter-spacing:-.015em}
+  .wf{display:flex;align-items:flex-start;justify-content:space-between}
+  .wn{width:172px;text-align:center}
+  .wc{width:112px;height:112px;margin:0 auto;border-radius:50%;background:#1d1b19;border:2px solid color-mix(in srgb,var(--c) 60%,transparent);display:grid;place-items:center;font-size:54px}
+  .wn span{display:block;font-size:25px;font-weight:700;line-height:1.2;margin-top:14px;color:#e9e0d5}
+  .wa{font-size:40px;font-weight:900;color:var(--c);margin-top:32px}
+  .wp{display:flex;gap:14px}
+  .wp div{font-size:29px;font-weight:800;white-space:nowrap;background:color-mix(in srgb,var(--c) 15%,#1a1917);border-radius:40px;padding:12px 26px}
+  .wmsg{min-height:84px;display:flex;align-items:center;justify-content:space-between;gap:16px;background:#fff;color:#111;border-radius:18px;padding:12px 14px 12px 20px;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+  .wmsg b{display:block;font-size:24px;font-weight:700}
+  .wmsg span{display:block;font-size:21px;color:#777;margin-top:2px}
+  .wmsg .go{flex:none;background:#2fb457;color:#fff;font-size:23px;font-weight:700;border-radius:12px;padding:12px 18px}
+  .wneed{min-height:84px;display:flex;align-items:center;font-size:26px;font-weight:700;color:#d8cfc4;border:2px dashed color-mix(in srgb,var(--c) 50%,transparent);border-radius:18px;padding:13px 22px}
+
+  /* ---------- кто проверяет сторис ---------- */
+  .chk{display:flex;justify-content:center;gap:80px;margin-top:60px}
+  .chk .it{width:350px;text-align:center}
+  .chk .c{position:relative;width:210px;height:210px;margin:0 auto;border-radius:50%;background:#1a1318;border:2px solid color-mix(in srgb,var(--ac) 55%,transparent);display:grid;place-items:center;font-size:100px;box-shadow:0 0 60px color-mix(in srgb,var(--ac) 22%,transparent)}
+  .chk .c.two{font-size:72px;letter-spacing:4px}
+  .chk .c small{position:absolute;right:-4px;bottom:0;width:80px;height:80px;border-radius:50%;background:#251d26;border:2px solid color-mix(in srgb,var(--ac2) 70%,transparent);display:grid;place-items:center;font-size:42px}
+  .chk b{display:block;font-size:42px;font-weight:800;margin-top:30px;letter-spacing:-.01em}
+  .chk span{display:block;font-size:28px;color:var(--mute);margin-top:8px}
+
+  /* ---------- вопросы перед запуском ---------- */
+  .qs{display:flex;flex-direction:column;justify-content:center}
+  .qs .eyebrow{align-self:flex-start}
+  .qm{width:58px;height:58px;flex:none;border-radius:50%;background:var(--ac);color:#0b0a09;font-size:36px;font-weight:900;display:grid;place-items:center;letter-spacing:0}
+  .qt{display:flex;align-items:center;gap:24px;font-size:56px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+  .qt.xl{font-size:88px;letter-spacing:-.028em}
+  .qn{width:72px;height:72px;flex:none;border-radius:50%;border:3px solid var(--ac);color:var(--ac);font-size:38px;font-weight:900;display:grid;place-items:center;letter-spacing:0}
+  .qt.xl .qn{width:92px;height:92px;font-size:48px}
+  .qt .chip{margin-left:0;font-size:26px;padding:7px 18px}
+  .qb+.qb{margin-top:60px}
+  .qopts{display:flex;gap:24px;margin-top:26px;height:190px}
+  .qopts>div{flex:1}
+  .qopts.big{height:400px;margin-top:56px;gap:40px}
+  .opt{position:relative;height:100%;border-radius:30px;background:#151413;border:2px solid #2c2926;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;cursor:pointer;
+    transition:border-color .25s,background .25s,box-shadow .25s,opacity .25s,transform .3s cubic-bezier(.2,1.4,.4,1)}
+  .opt:hover{border-color:color-mix(in srgb,var(--ac) 55%,#2c2926)}
+  .opt i{font-style:normal;font-size:56px;line-height:1}
+  .opt b{font-size:36px;font-weight:800;letter-spacing:-.01em;line-height:1.1}
+  .opt b.num{font-size:76px;font-weight:900;letter-spacing:-.03em;line-height:1}
+  .opt span{font-size:24px;color:var(--mute);font-weight:600}
+  .qopts.big .opt{gap:18px}
+  .qopts.big .opt i{font-size:110px}
+  .qopts.big .opt b{font-size:60px}
+  .qopts.big .opt span{font-size:30px}
+  .opt::after{content:"✓";position:absolute;top:16px;right:18px;width:48px;height:48px;border-radius:50%;background:var(--ac);color:#0b0a09;font-size:28px;font-weight:900;display:grid;place-items:center;opacity:0;transform:scale(.4);transition:opacity .2s,transform .3s cubic-bezier(.2,1.4,.4,1)}
+  .opt.sel{border-color:var(--ac);background:color-mix(in srgb,var(--ac) 18%,#151413);box-shadow:0 0 0 4px color-mix(in srgb,var(--ac) 30%,transparent),0 0 60px color-mix(in srgb,var(--ac) 35%,transparent);transform:scale(1.03)}
+  .opt.sel::after{opacity:1;transform:none}
+  .qopts.has .opt:not(.sel){opacity:.42}
+
+  /* ---------- бонусы по шагам ---------- */
+  .tl{display:flex;align-items:flex-start;justify-content:space-between;margin-top:66px}
+  .tn{width:172px;text-align:center}
+  .tw{height:34px;font-size:19px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);white-space:nowrap;text-align:center}
+  .tn .c{width:124px;height:124px;margin:0 auto;border-radius:50%;background:#1a1312;border:2px solid color-mix(in srgb,var(--gold) 55%,transparent);display:grid;place-items:center;font-size:58px;box-shadow:0 0 50px rgba(255,80,40,.18)}
+  .tn b{display:block;font-size:27px;font-weight:800;line-height:1.15;letter-spacing:-.01em;margin-top:18px}
+  .tn span{display:block;font-size:21px;font-weight:600;color:var(--mute);line-height:1.25;margin-top:6px}
+  .tar{flex:none;width:34px;text-align:center;font-size:38px;font-weight:900;color:var(--gold);margin-top:72px}
+  .tfork{width:320px;margin-top:-42px}
+  .tf{display:flex;align-items:center;gap:16px;height:98px;border-radius:24px;background:#151413;border:2px solid color-mix(in srgb,var(--c) 55%,#2c2926);padding:0 18px;text-align:left}
+  .tf+.tf{margin-top:12px}
+  .tf i{font-style:normal;width:66px;height:66px;flex:none;border-radius:50%;background:color-mix(in srgb,var(--c) 18%,#151413);display:grid;place-items:center;font-size:36px}
+  .tf b{display:block;font-size:27px;font-weight:800;letter-spacing:-.01em}
+  .tf span{display:block;font-size:20px;font-weight:600;color:var(--mute);margin-top:2px}
+  .tnote{margin-top:60px;display:inline-flex;align-items:center;gap:14px;font-size:27px;font-weight:700;color:#e9e0d5;background:#1a1716;border:1px solid #2c2926;border-radius:40px;padding:14px 28px}
+
+  /* ---------- проверка сторис, автомат, диспетчеры ---------- */
+  .callouts.tight{margin-top:44px;gap:22px}
+  .steps.tight{margin-top:44px;gap:22px}
+  .steps.tight .n{width:64px;height:64px;font-size:30px}
+  .steps.tight::before{left:31px}
+  .steps.gold .n{background:var(--gold)}
+  .steps.gold::before{border-color:color-mix(in srgb,var(--gold) 45%,transparent)}
+  .steps.green .n{background:var(--green)}
+  .steps.green::before{border-color:color-mix(in srgb,var(--green) 45%,transparent)}
+  .card .ln{font-size:15px;margin-bottom:6px}
+  .card .lk{color:#2f8de4;font-weight:600}
+  .card .mu{color:#8a8a8a}
+  .card.doubt{border-left:5px solid #f5a623}
+  .card.done{opacity:.8}
+  .kb .blue{background:#2f8de4}
+  .igc{background:#000;color:#fff}
+  .igc .hd{height:104px;flex:none;display:flex;align-items:flex-end;gap:12px;padding:0 18px 14px;border-bottom:1px solid #222;font-size:17px;font-weight:700;line-height:1.15}
+  .igc .hd .av{width:40px;height:40px;flex:none;border-radius:50%;background:#f26a1b url(img/logo-vkusnoff.png) center/86% no-repeat}
+  .igc .hd small{display:block;font-size:13px;color:#8e8e8e;font-weight:500}
+  .igc .body{flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:8px;padding:14px}
+  .igc .m{max-width:272px;border-radius:20px;padding:10px 14px;font-size:16px;line-height:1.32}
+  .igc .m.in{align-self:flex-start;background:#262626;border-bottom-left-radius:6px}
+  .igc .m.out{align-self:flex-end;background:linear-gradient(135deg,#6a5cff,#a53cf2);border-bottom-right-radius:6px;font-weight:700;font-size:17px}
+  .igc .pic{align-self:flex-start;width:120px;border-radius:16px;display:block}
+  .igc .gap{align-self:center;font-size:13px;font-weight:600;color:#8e8e8e;margin:4px 0}
+  .igc .ip{height:54px;flex:none;margin:0 12px 16px;border-radius:27px;background:#1c1c1e;font-size:14px;color:#888;display:flex;align-items:center;padding-left:18px}
+</style>
+</head>
+<body>
+<div id="deck">
+
+  <!-- 1. Обложка -->
+  <section class="slide s1">
+    <img class="logo a" src="img/logo-vkusnoff.png" alt="Вкуснофф">
+    <div class="title grad a" style="--d:1">Вкус‑отметки</div>
+    <div class="sub a" style="--d:2">Instagram кафе и доставки — на автопилоте</div>
+    <div class="row">
+      <div class="pop" style="--d:3"><img class="badge float" src="img/znachok-direkt.webp" alt="Вкус Директ"></div>
+      <div class="pop" style="--d:4"><img class="badge float f2" src="img/znachok-otmetki.webp" alt="Вкус Отметки"></div>
+      <div class="pop" style="--d:5"><img class="badge float f3" src="img/znachok-bonusy.webp" alt="Вкус Бонусы"></div>
+    </div>
+  </section>
+
+  <!-- 2. Проблема -->
+  <section class="slide" data-tone="warn">
+    <div class="h a">Гости пишут —<br>а ответа <em>нет</em></div>
+    <div class="sub a" style="--d:1">Сообщения теряются, отметки в сторис пропадают</div>
+    <div class="tiles">
+      <div class="dm a" style="--d:2"><div class="top"><span class="ava"></span>гость</div>
+        <div class="msg">Сколько стоит доставка?</div><div class="late">⏱ 47 мин без ответа</div></div>
+      <div class="dm a" style="--d:3"><div class="top"><span class="ava"></span>гость</div>
+        <div class="msg">Вы сегодня работаете?</div><div class="late">⏱ 2 часа без ответа</div></div>
+      <div class="dm a" style="--d:4"><div class="top"><span class="ava"></span>гость</div>
+        <div class="msg">Можно забрать к&nbsp;12:00?</div><div class="late">⏱ со вчера без ответа</div></div>
+      <div class="dm story a" style="--d:5"><img src="img/storis-burger.jpg" alt="">
+        <div class="top">отметка в сторис</div><div class="late">👀 исчезла — никто не&nbsp;заметил</div></div>
+    </div>
+  </section>
+
+  <!-- 3. Три части -->
+  <section class="slide center s3">
+    <div class="h a">Три части — <span class="grad">одна система</span></div>
+    <div class="three">
+      <div class="it pop" style="--d:1"><img class="badge" src="img/znachok-direkt.webp" alt=""><b>Вкус Директ</b><span>отвечает гостям</span></div>
+      <div class="it pop" style="--d:2"><img class="badge" src="img/znachok-otmetki.webp" alt=""><b>Вкус Отметки</b><span>репостит сторис гостей</span></div>
+      <div class="it pop" style="--d:3"><img class="badge" src="img/znachok-bonusy.webp" alt=""><b>Вкус Бонусы</b><span>дарит бонусы за&nbsp;отметку</span></div>
+    </div>
+  </section>
+
+  <!-- 4. Директ: как работает -->
+  <section class="slide" data-tone="direct">
+    <div class="split">
+      <div class="left">
+        <div class="eyebrow a"><img src="img/znachok-direkt.webp" alt="">Вкус Директ</div>
+        <div class="h a" style="--d:1">Гость пишет —<br>ответ <em>уже готов</em></div>
+        <div class="sub a" style="--d:2">Директ кафе и доставки — в одной группе Telegram</div>
+        <div class="steps">
+          <div class="step a" style="--d:3"><div class="n">1</div><div class="tx">Гость пишет в Instagram</div></div>
+          <div class="step a" style="--d:4"><div class="n">2</div><div class="tx">ИИ сразу готовит ответ<span class="chip">≈ 20 сек</span></div></div>
+          <div class="step a" style="--d:5"><div class="n">3</div><div class="tx">Одна кнопка — гость получил</div></div>
+        </div>
+      </div>
+      <div class="phone pop" style="--d:2">
+        <div class="island"></div>
+        <div class="scr tg">
+          <div class="tg-status"><span>11:27</span><i>●●● ▮</i></div>
+          <div class="tg-head"><span class="back">‹</span><div class="t"><b>Вкус Директ</b><span>5 участников</span></div><div class="av">ВД</div></div>
+          <div class="tg-chat">
+            <div class="row-ok">✅ <b>Марат</b> · отправлено<s>10:58</s></div>
+            <div class="row-ok">✅ <b>Ержан</b> · отправлено<s>11:14</s></div>
+            <div class="card">
+              <div class="who">❓ <b>Айгерим</b> · Доставка</div>
+              <div class="q">Дайте номер телефона, где есть доставка</div>
+              <div class="ans"><div class="l">ответ</div>Здравствуйте, Айгерим! Номер доставки: +7&nbsp;705&nbsp;888&nbsp;44&nbsp;00 🧡 Заказать можно и на сайте vkusnoff.kz/delivery</div>
+              <div class="tm">11:26</div>
+            </div>
+            <div class="kb"><div class="go">📤 Отправить гостю</div></div>
+            <div class="kb"><div>🔄 Другой</div><div>↗ Директ</div></div>
+          </div>
+          <div class="tg-input"><span style="font-size:22px;color:#999">📎</span><div>Сообщение</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Директ: переделать -->
+  <section class="slide" data-tone="direct">
+    <div class="eyebrow a"><img src="img/znachok-direkt.webp" alt="">Вкус Директ</div>
+    <div class="h a" style="--d:1">Не нравится — <em>переделает</em></div>
+    <div class="duo">
+      <div class="tile a" style="--d:2">
+        <div class="bigbtn">🔄 Другой</div>
+        <div class="stack">
+          <div class="card back">Здравствуйте! Вот номер доставки 🧡</div>
+          <div class="card front">Добрый день! Доставка — +7&nbsp;705&nbsp;888&nbsp;44&nbsp;00&nbsp;🧡 Удобнее заказать на сайте vkusnoff.kz/delivery</div>
+        </div>
+        <div class="cap">Новый вариант — одной кнопкой</div>
+      </div>
+      <div class="tile a" style="--d:3">
+        <div class="vbox"><div class="voice"><div class="pl"></div>
+          <div class="wave"><i style="height:14px"></i><i style="height:26px"></i><i style="height:36px"></i><i style="height:20px"></i><i style="height:30px"></i><i style="height:40px"></i><i style="height:22px"></i><i style="height:32px"></i><i style="height:16px"></i><i style="height:28px"></i><i style="height:38px"></i><i style="height:18px"></i><i style="height:26px"></i><i style="height:12px"></i></div>
+          <span>0:06</span></div>
+        <div class="down">↓ ИИ сам собрал текст</div>
+        <div class="card solo">Здравствуйте! Приняли: 2 классических донера и кола 1,5&nbsp;л — будут готовы к&nbsp;12:00&nbsp;🧡 Ждём вас!</div></div>
+        <div class="cap">Сказал голосом — текст готов</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Директ: порядок -->
+  <section class="slide" data-tone="direct">
+    <div class="split">
+      <div class="phone pop" style="--d:1">
+        <div class="island"></div>
+        <div class="scr tg">
+          <div class="tg-status"><span>11:32</span><i>●●● ▮</i></div>
+          <div class="tg-head"><span class="back">‹</span><div class="t"><b>Вкус Директ</b><span>5 участников</span></div><div class="av">ВД</div></div>
+          <div class="tg-chat">
+            <div class="row-ok">✅ <b>Марат</b> · отправлено<s>10:58</s></div>
+            <div class="row-ok">✅ <b>Ержан</b> · отправлено<s>11:14</s></div>
+            <div class="row-ok">✅ <b>Сергей</b> · отправлено<s>11:21</s></div>
+            <div class="card alarm" style="padding-bottom:9px">
+              <div class="who" style="margin-bottom:5px">❗ <b>Алия</b> · Доставка <span class="tag-red">ЖАЛОБА</span></div>
+              <div class="q" style="margin:0;background:#ffeceb;border-color:#ff3b2f">Курьер опоздал на 40 минут</div>
+            </div>
+            <div class="card">
+              <div class="who">❓ <b>Айгерим</b> · Кафе · <span class="tag-new">NEW</span> <b>+2</b></div>
+              <div class="q">…донер и кола 1,5<br><b>Сколько будет?</b><br><b>Заберу в 12:00</b></div>
+              <div class="ans"><div class="l">ответ</div>Здравствуйте! Два донера и кола 1,5&nbsp;л — будут готовы к 12:00 🧡</div>
+            </div>
+            <div class="kb"><div class="go">📤 Отправить гостю</div></div>
+          </div>
+          <div class="tg-input"><span style="font-size:22px;color:#999">📎</span><div>Сообщение</div></div>
+        </div>
+      </div>
+      <div class="left" style="width:860px">
+        <div class="eyebrow a"><img src="img/znachok-direkt.webp" alt="">Вкус Директ</div>
+        <div class="h a" style="--d:1">В чате всегда<br><em>порядок</em></div>
+        <div class="callouts">
+          <div class="co a" style="--d:2"><div class="ic">🆕</div>Гость дописал — та же карточка</div>
+          <div class="co a" style="--d:3"><div class="ic">✅</div>Ответили — карточка свернулась</div>
+          <div class="co a" style="--d:4"><div class="ic">🔴</div>Жалобу видно сразу</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. Отметки -->
+  <section class="slide center" data-tone="otm">
+    <div class="eyebrow a"><img src="img/znachok-otmetki.webp" alt="">Вкус Отметки</div>
+    <div class="h a" style="--d:1">Отметил нас — <em>мы репостнули</em></div>
+    <div class="flow">
+      <div class="col a" style="--d:2">
+        <div class="phone sm"><div class="island"></div><div class="scr st">
+          <div class="blur"></div><img class="ph" src="img/storis-burger.jpg" alt="">
+          <div class="bars"><i></i></div><div class="who"><span class="av"></span>гость</div>
+          <div class="send">Отправить сообщение</div></div></div>
+        <div class="lb">Гость отметил нас</div>
+      </div>
+      <div class="arrow a" style="--d:3"><span>сам</span><b>→</b></div>
+      <div class="col a" style="--d:4">
+        <div class="phone sm"><div class="island"></div><div class="scr st">
+          <div class="blur"></div><img class="ph" src="img/storis-burger.jpg" alt="">
+          <div class="bars"><i></i></div><div class="who"><span class="av vk"></span>kafe.vkusnoff</div>
+          <div class="mention">@гость</div><div class="tap">👆</div>
+          <div class="send">Отправить сообщение</div></div></div>
+        <div class="lb">Репост — у нас в сторис</div>
+      </div>
+      <div class="arrow a" style="--d:5"><span>сам</span><b>→</b></div>
+      <div class="col a" style="--d:6">
+        <div class="phone sm"><div class="island"></div><div class="scr ig">
+          <div class="hd"><span class="av"></span>гость</div>
+          <div class="body"><img src="img/otkrytka-spasibo.jpg" alt=""><div class="bub">Спасибо за отметку! Рады, что вам у нас вкусно 🧡</div></div>
+          <div class="in">Сообщение…</div></div></div>
+        <div class="lb">Гостю — «спасибо»</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. Бонусы -->
+  <section class="slide" data-tone="bon">
+    <div class="split">
+      <div class="left" style="width:720px">
+        <div class="eyebrow a"><img src="img/znachok-bonusy.webp" alt="">Вкус Бонусы</div>
+        <div class="h a" style="--d:1">Отметка —<br><em style="color:var(--gold)">бонусы гостю</em></div>
+        <div class="sub a" style="--d:2">За отметку — бонусы. Гость приходит снова</div>
+      </div>
+      <div class="cycle pop" style="--d:2">
+        <svg viewBox="0 0 700 700" fill="none">
+          <defs><marker id="ah" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#ffcf3f"/></marker></defs>
+          <g stroke="#ffcf3f" stroke-width="5" stroke-linecap="round" stroke-dasharray="2 14" marker-end="url(#ah)" opacity=".85">
+            <path d="M443.7 118.2 A250 250 0 0 1 597.6 384.8"/>
+            <path d="M520 612 Q350 700 186 618"/>
+            <path d="M102.4 384.8 A250 250 0 0 1 256.3 118.2"/>
+          </g>
+        </svg>
+        <div class="node" style="left:350px;top:100px"><div class="c">📸</div><b>Отметил в сторис</b></div>
+        <div class="node" style="left:566px;top:475px"><div class="c">🎁</div><b>Получил бонусы</b></div>
+        <div class="node" style="left:134px;top:475px"><div class="c">🍔</div><b>Пришёл снова</b></div>
+        <div class="mid"><div class="big">+1 000</div><span>бонусов</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9. Выгода -->
+  <section class="slide">
+    <div class="h a">Что получает <span class="grad">Вкуснофф</span></div>
+    <div class="grid4">
+      <div class="ben a" style="--d:1;--c:var(--green)"><div class="ic">💬</div><b>Ни одно сообщение<br>не теряется</b></div>
+      <div class="ben a" style="--d:2;--c:var(--yellow)"><div class="ic">⚡</div><b>Ответ гостю —<br>за секунды</b></div>
+      <div class="ben a" style="--d:3;--c:var(--pink)"><div class="ic">📣</div><b>Бесплатная реклама<br>в сторис гостей</b></div>
+      <div class="ben a" style="--d:4;--c:var(--red)"><div class="ic">🔁</div><b>Гости возвращаются<br>за бонусами</b></div>
+    </div>
+  </section>
+
+  <!-- 10. Как начислять бонусы — 2 пути -->
+  <section class="slide" data-tone="bon">
+    <div class="eyebrow a"><img src="img/znachok-bonusy.webp" alt="">Вкус Бонусы</div>
+    <div class="h a" style="--d:1">Как начислять бонусы — <em style="color:var(--gold)">2&nbsp;пути</em></div>
+    <div class="ways">
+      <div class="way a" style="--d:2;--c:var(--gold)">
+        <div class="wh"><div class="wl">А</div><b>Система сама</b></div>
+        <div class="wf">
+          <div class="wn"><div class="wc">📸</div><span>Гость<br>отметил</span></div>
+          <div class="wa">→</div>
+          <div class="wn"><div class="wc">🤖</div><span>Бот<br>проверил</span></div>
+          <div class="wa">→</div>
+          <div class="wn"><div class="wc">🎁</div><span>Бонусы<br>начислены</span></div>
+        </div>
+        <div class="wp"><div>⚡ Мгновенно</div><div>🙌 Без людей</div></div>
+        <div class="wneed">🔑 Нужен доступ к iiko от Элвиса</div>
+      </div>
+      <div class="way a" style="--d:3;--c:var(--green)">
+        <div class="wh"><div class="wl">Б</div><b>Диспетчер</b></div>
+        <div class="wf">
+          <div class="wn"><div class="wc">📸</div><span>Гость<br>отметил</span></div>
+          <div class="wa">→</div>
+          <div class="wn"><div class="wc">💬</div><span>Бот пишет<br>в группу</span></div>
+          <div class="wa">→</div>
+          <div class="wn"><div class="wc">✅</div><span>Диспетчер<br>начислил</span></div>
+        </div>
+        <div class="wp"><div>👀 Контроль</div><div>🚀 Запуск сразу</div></div>
+        <div class="wmsg"><div><b>🎁 Отметка от гостя Айгерим</b><span>+7 705 ••• •• 12</span></div><div class="go">✅ Начислил</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11. Бонусы по шагам -->
+  <section class="slide" data-tone="bon">
+    <div class="eyebrow a"><img src="img/znachok-bonusy.webp" alt="">Вкус Бонусы</div>
+    <div class="h a" style="--d:1">Бонусы <em style="color:var(--gold)">по шагам</em></div>
+    <div class="sub a" style="--d:2">От гостя — только отметка и номер телефона</div>
+    <div class="tl">
+      <div class="tn a" style="--d:3"><div class="tw"></div><div class="c">📸</div><b>Гость отметил</b><span>нас в сторис</span></div>
+      <div class="tar a" style="--d:3">→</div>
+      <div class="tn a" style="--d:4"><div class="tw">сразу</div><div class="c">💌</div><b>«Спасибо, что отметили»</b><span>и открытка</span></div>
+      <div class="tar a" style="--d:4">→</div>
+      <div class="tn a" style="--d:5"><div class="tw">24 часа</div><div class="c">⏳</div><b>Проверка сторис</b><span>висит? наша еда?</span></div>
+      <div class="tar a" style="--d:5">→</div>
+      <div class="tn a" style="--d:6"><div class="tw">в директ</div><div class="c">📱</div><b>Гость присылает номер</b><span>из приложения</span></div>
+      <div class="tar a" style="--d:6">→</div>
+      <div class="tfork a" style="--d:7"><div class="tw">кто начислит</div>
+        <div class="tf" style="--c:var(--green)"><i>🧑‍💼</i><div><b>Диспетчер</b><span>в группе жмёт ✅</span></div></div>
+        <div class="tf" style="--c:var(--gold)"><i>🤖</i><div><b>Бот сам</b><span>в программе iiko</span></div></div>
+      </div>
+      <div class="tar a" style="--d:7">→</div>
+      <div class="tn a" style="--d:8"><div class="tw">готово</div><div class="c">🎉</div><b>«Бонусы начислены»</b><span>гостю в директ</span></div>
+    </div>
+    <div class="tnote a" style="--d:9">❌ Удалил сторис раньше суток — бонуса нет</div>
+  </section>
+
+  <!-- 12. Как бот проверяет сторис -->
+  <section class="slide" data-tone="otm">
+    <div class="split">
+      <div class="left">
+        <div class="eyebrow a"><img src="img/znachok-otmetki.webp" alt="">Вкус Отметки</div>
+        <div class="h a" style="--d:1">Как бот <em>проверяет</em><br>сторис</div>
+        <div class="callouts tight">
+          <div class="co a" style="--d:2"><div class="ic">⏳</div>Сторис провисела сутки</div>
+          <div class="co a" style="--d:3"><div class="ic">🍔</div>На ней наша еда или кафе</div>
+          <div class="co a" style="--d:4"><div class="ic">⬛</div>Не чёрный экран, не чужой скрин</div>
+          <div class="co a" style="--d:5"><div class="ic">🔁</div>Не повтор — один бонус на гостя</div>
+        </div>
+        <div class="tnote a" style="--d:6;margin-top:40px">🤔 Спорное — людям, кнопками ✅ / ❌</div>
+      </div>
+      <div class="phone pop" style="--d:3">
+        <div class="island"></div>
+        <div class="scr tg">
+          <div class="tg-status"><span>14:32</span><i>●●● ▮</i></div>
+          <div class="tg-head"><span class="back">‹</span><div class="t"><b>Вкус Бонусы</b><span>5 участников</span></div><div class="av">ВБ</div></div>
+          <div class="tg-chat">
+            <div class="card done">
+              <div class="who">🤔 <b>Проверь сторис</b> · Ержан</div>
+              <div class="ln" style="margin:0">✅ <b>Засчитала:</b> Аружан · 12:10</div>
+            </div>
+            <div class="card doubt">
+              <div class="who">🤔 <b>Проверь сторис</b> — бот не уверен</div>
+              <div class="ln">👤 Айгерим · 📅 19.11 · 14:30</div>
+              <div class="q">🤖 Видно только кружку, еды не разглядеть</div>
+              <div class="ln lk">▶️ Открыть сторис</div>
+              <div class="ln mu" style="margin:0">⏰ Решить до 20.11 · 14:30</div>
+              <div class="tm">14:31</div>
+            </div>
+            <div class="kb"><div class="go">✅ Засчитать</div><div>❌ Нет</div></div>
+          </div>
+          <div class="tg-input"><span style="font-size:22px;color:#999">📎</span><div>Сообщение</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13. Автоматически -->
+  <section class="slide" data-tone="bon">
+    <div class="split">
+      <div class="phone pop" style="--d:1">
+        <div class="island"></div>
+        <div class="scr igc">
+          <div class="hd"><span class="av"></span><div>kafe.vkusnoff<small>Вкуснофф</small></div></div>
+          <div class="body">
+            <img class="pic" src="img/otkrytka-spasibo.jpg" alt="">
+            <div class="m in">Спасибо, что отметили нас! 🧡 Не удаляйте сторис 24 часа — и мы начислим 1 000 бонусов 🎁</div>
+            <div class="gap">через 24 часа</div>
+            <div class="m in">Сторис провисела сутки ✅ Напишите номер телефона из приложения «Вкуснофф» 🎁</div>
+            <div class="m out">+7 705 ••• •• 12</div>
+            <div class="m in">Бонусы начислены 🎉 1 000 уже в приложении «Вкуснофф» 🧡</div>
+          </div>
+          <div class="ip">Сообщение…</div>
+        </div>
+      </div>
+      <div class="left" style="width:860px">
+        <div class="eyebrow a"><img src="img/znachok-bonusy.webp" alt="">Вкус Бонусы · путь А</div>
+        <div class="h a" style="--d:1">Автоматически —<br><em style="color:var(--gold)">бот сам</em></div>
+        <div class="steps tight gold">
+          <div class="step a" style="--d:2"><div class="n">1</div><div class="tx">Гость присылает номер в директ</div></div>
+          <div class="step a" style="--d:3"><div class="n">2</div><div class="tx">Бот находит гостя в программе iiko</div></div>
+          <div class="step a" style="--d:4"><div class="n">3</div><div class="tx">Кладёт +1 000 бонусов на счёт</div></div>
+          <div class="step a" style="--d:5"><div class="n">4</div><div class="tx">Гостю — «Бонусы начислены»</div></div>
+        </div>
+        <div class="wneed a" style="--d:6;--c:var(--gold);margin-top:40px">🔑 От Элвиса — доступ к программе бонусов iiko</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 14. Если начисляют диспетчеры -->
+  <section class="slide" data-tone="bon">
+    <div class="split">
+      <div class="left" style="width:860px">
+        <div class="eyebrow a"><img src="img/znachok-bonusy.webp" alt="">Вкус Бонусы · путь Б</div>
+        <div class="h a" style="--d:1">Если начисляют<br><em style="color:var(--green)">диспетчеры</em></div>
+        <div class="steps tight green">
+          <div class="step a" style="--d:2"><div class="n">1</div><div class="tx">Бот присылает карточку в группу</div></div>
+          <div class="step a" style="--d:3"><div class="n">2</div><div class="tx">✋ Взял — начисляет в iiko</div></div>
+          <div class="step a" style="--d:4"><div class="n">3</div><div class="tx">✅ Начислил — гостю сообщение</div></div>
+        </div>
+        <div class="tnote a" style="--d:5;margin-top:44px">📊 /stats — кто, кому и когда начислил</div>
+      </div>
+      <div class="phone pop" style="--d:2">
+        <div class="island"></div>
+        <div class="scr tg">
+          <div class="tg-status"><span>11:27</span><i>●●● ▮</i></div>
+          <div class="tg-head"><span class="back">‹</span><div class="t"><b>Вкус Бонусы</b><span>5 участников</span></div><div class="av">ВБ</div></div>
+          <div class="tg-chat">
+            <div class="card done">
+              <div class="who">🎁 <b>Начислить 1 000 бонусов</b> · Ержан</div>
+              <div class="ln" style="margin:0">✅ Начислено за 6 мин · ✉️ гостю отправлено</div>
+            </div>
+            <div class="kb"><div>✅ Начислено · Аружан</div></div>
+            <div class="card">
+              <div class="who">🎁 <b>Начислить 1 000 бонусов</b> · Айгерим</div>
+              <div class="q">📞 <b>+7 705 ••• •• 12</b></div>
+              <div class="ln mu" style="margin:0">отметка 19.11 · сторис продержалась сутки</div>
+              <div class="tm">11:26</div>
+            </div>
+            <div class="kb"><div class="blue">✋ Взял, начисляю</div></div>
+          </div>
+          <div class="tg-input"><span style="font-size:22px;color:#999">📎</span><div>Сообщение</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 15. Кто проверяет сторис -->
+  <section class="slide center" data-tone="otm">
+    <div class="eyebrow a"><img src="img/znachok-otmetki.webp" alt="">Вкус Отметки</div>
+    <div class="h a" style="--d:1">Кто проверит сторис<br><em>перед бонусом?</em></div>
+    <div class="chk">
+      <div class="it pop" style="--d:2"><div class="c">👀</div><b>Мы</b><span>смотрим сами</span></div>
+      <div class="it pop" style="--d:3"><div class="c two">✅❌</div><b>Диспетчеры</b><span>кнопками ✅&nbsp;/&nbsp;❌</span></div>
+      <div class="it pop" style="--d:4"><div class="c">🤖<small>👤</small></div><b>Бот сам</b><span>спорное — людям</span></div>
+    </div>
+  </section>
+
+  <!-- 16. Вопрос 1 — главный -->
+  <section class="slide qs">
+    <div class="eyebrow a"><span class="qm">?</span>Вопросы перед запуском</div>
+    <div class="qt xl a" style="--d:1"><span class="qn">1</span>Кто начисляет бонусы?<span class="chip">главный</span></div>
+    <div class="qopts big" data-q="1">
+      <div class="pop" style="--d:2"><div class="opt" data-v="sam"><i>🤖</i><b>Система сама</b><span>бот начисляет в iiko</span></div></div>
+      <div class="pop" style="--d:3"><div class="opt" data-v="disp"><i>🧑‍💼</i><b>Диспетчеры</b><span>жмут ✅ и начисляют</span></div></div>
+    </div>
+  </section>
+
+  <!-- 17. Вопросы 2–3 -->
+  <section class="slide qs">
+    <div class="eyebrow a"><span class="qm">?</span>Вопросы перед запуском</div>
+    <div class="qb a" style="--d:1">
+      <div class="qt"><span class="qn">2</span>Сколько бонусов за отметку?</div>
+      <div class="qopts" data-q="2">
+        <div><div class="opt" data-v="1000"><b class="num">1 000</b><span>бонусов</span></div></div>
+        <div><div class="opt" data-v="500"><b class="num">500</b><span>бонусов</span></div></div>
+        <div><div class="opt" data-v="other"><b class="num" style="font-size:58px">Другая</b><span>сумма</span></div></div>
+      </div>
+    </div>
+    <div class="qb a" style="--d:3">
+      <div class="qt"><span class="qn">3</span>Кто проверяет сторис?</div>
+      <div class="qopts" data-q="3">
+        <div><div class="opt" data-v="my"><i>👀</i><b>Мы</b></div></div>
+        <div><div class="opt" data-v="disp"><i>✅</i><b>Диспетчеры</b></div></div>
+        <div><div class="opt" data-v="bot"><i>🤖</i><b>Бот</b></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 18. Вопросы 4–5 -->
+  <section class="slide qs">
+    <div class="eyebrow a"><span class="qm">?</span>Вопросы перед запуском</div>
+    <div class="qb a" style="--d:1">
+      <div class="qt"><span class="qn">4</span>Как часто гостю можно получать бонус?</div>
+      <div class="qopts" data-q="4">
+        <div><div class="opt" data-v="week"><i>📅</i><b>Раз в неделю</b></div></div>
+        <div><div class="opt" data-v="day"><i>☀️</i><b>Раз в день</b></div></div>
+        <div><div class="opt" data-v="check"><i>🧾</i><b>Один чек — один бонус</b></div></div>
+      </div>
+    </div>
+    <div class="qb a" style="--d:3">
+      <div class="qt"><span class="qn">5</span>Кто отвечает гостям в Директе и жмёт «📤»?</div>
+      <div class="qopts" data-q="5">
+        <div><div class="opt" data-v="denis"><i>👤</i><b>Денис</b></div></div>
+        <div><div class="opt" data-v="denis-disp"><i>👥</i><b>Денис + диспетчеры</b></div></div>
+        <div><div class="opt" data-v="smeny"><i>🔄</i><b>Диспетчеры по сменам</b></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 19. Вопрос 6 -->
+  <section class="slide qs">
+    <div class="eyebrow a"><span class="qm">?</span>Вопросы перед запуском</div>
+    <div class="qt xl a" style="--d:1"><span class="qn">6</span>Сразу всем — или пилот?</div>
+    <div class="qopts big" data-q="6">
+      <div class="pop" style="--d:2"><div class="opt" data-v="all"><i>🚀</i><b>Сразу всем</b><span>все гости с первого дня</span></div></div>
+      <div class="pop" style="--d:3"><div class="opt" data-v="pilot"><i>🧪</i><b>Пилот на 2 недели</b><span>смотрим — потом всем</span></div></div>
+    </div>
+  </section>
+
+  <!-- 20. Финал -->
+  <section class="slide s10">
+    <div class="row">
+      <div class="pop" style="--d:0"><img class="badge float" src="img/znachok-direkt.webp" alt=""></div>
+      <div class="pop" style="--d:1"><img class="badge float f2" src="img/znachok-otmetki.webp" alt=""></div>
+      <div class="pop" style="--d:2"><img class="badge float f3" src="img/znachok-bonusy.webp" alt=""></div>
+    </div>
+    <div class="title grad a" style="--d:3">Готово к запуску</div>
+    <div class="sub a" style="--d:4">Осталось включить бонусы</div>
+    <img class="logo a" style="--d:5" src="img/logo-vkusnoff.png" alt="Вкуснофф">
+  </section>
+
+  <div id="num"></div>
+  <div id="bar"></div>
+</div>
+
+<script>
+(function(){
+  const deck=document.getElementById('deck');
+  const slides=[...deck.querySelectorAll('.slide')];
+  const num=document.getElementById('num'), bar=document.getElementById('bar');
+  let cur=-1;
+
+  function fit(){
+    const s=Math.min(innerWidth/1600, innerHeight/900);
+    deck.style.transform=`scale(${s}) translate(-50%,-50%)`;
+  }
+  function go(i){
+    i=Math.max(0,Math.min(slides.length-1,i));
+    if(i===cur) return;
+    slides.forEach((el,k)=>el.classList.toggle('on',k===i));
+    cur=i;
+    num.textContent=(i+1)+' / '+slides.length;
+    bar.style.width=((i+1)/slides.length*100)+'%';
+    const h='#'+(i+1);
+    if(location.hash!==h) history.replaceState(null,'',h);
+  }
+  function fromHash(){
+    const n=parseInt(location.hash.slice(1),10);
+    go(isNaN(n)?0:n-1);
+  }
+  const next=()=>go(cur+1), prev=()=>go(cur-1);
+
+  // ответы на вопросы: один вариант на вопрос, повторный клик снимает выбор
+  function pick(o){
+    const g=o.closest('.qopts'), on=!o.classList.contains('sel');
+    g.querySelectorAll('.opt').forEach(x=>x.classList.toggle('sel',on&&x===o));
+    g.classList.toggle('has',on);
+  }
+  const optOf=t=>t&&t.closest?t.closest('.opt'):null;
+
+  addEventListener('keydown',e=>{
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    const k=e.key;
+    if(k==='ArrowRight'||k==='ArrowDown'||k==='PageDown'||k===' '||k==='Enter'){e.preventDefault();next();}
+    else if(k==='ArrowLeft'||k==='ArrowUp'||k==='PageUp'||k==='Backspace'){e.preventDefault();prev();}
+    else if(k==='Home'){e.preventDefault();go(0);}
+    else if(k==='End'){e.preventDefault();go(slides.length-1);}
+    else if(k==='f'||k==='F'||k==='а'||k==='А'){
+      if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen().catch(()=>{});
+    }
+  });
+  addEventListener('click',e=>{ const o=optOf(e.target); if(o){pick(o);return;} if(e.clientX<innerWidth*0.3) prev(); else next(); });
+  let tx=null,ty=0;
+  addEventListener('touchstart',e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY;},{passive:true});
+  addEventListener('touchend',e=>{
+    if(tx===null) return;
+    const x=e.changedTouches[0].clientX, dx=x-tx, dy=e.changedTouches[0].clientY-ty; tx=null;
+    if(e.cancelable) e.preventDefault(); // без двойного срабатывания через click
+    if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)){ dx<0?next():prev(); }
+    else if(Math.abs(dx)<12&&Math.abs(dy)<12){ const o=optOf(e.target); if(o) pick(o); else x<innerWidth*0.3?prev():next(); }
+  },{passive:false});
+  addEventListener('hashchange',fromHash);
+  addEventListener('resize',fit);
+  fit();
+  requestAnimationFrame(()=>requestAnimationFrame(fromHash));
+  setTimeout(fromHash,120); // запасной путь, если кадры не рисуются (фоновая вкладка)
+})();
+</script>
+</body>
+</html>
